@@ -2,115 +2,64 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Your Website</title>
+  <title>Import Data from Google Sheets</title>
   <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #f4f4f4;
-      color: #333;
-    }
-
-    header {
-      background-color: #007bff;
-      color: white;
-      padding: 1.5rem;
-      text-align: center;
-    }
-
-    .hero {
-      padding: 4rem 2rem;
-      text-align: center;
-      background: white;
-    }
-
-    .hero h1 {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .hero p {
-      font-size: 1.2rem;
-      color: #555;
-      margin-bottom: 2rem;
-    }
-
-    .hero button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 1rem 2rem;
-      font-size: 1rem;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .features {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 2rem;
-      padding: 3rem 2rem;
-      background: #f9f9f9;
-    }
-
-    .feature {
-      background: white;
-      border-radius: 10px;
-      padding: 2rem;
-      width: 300px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-
-    footer {
-      text-align: center;
-      padding: 1rem;
-      background-color: #333;
-      color: white;
-    }
-
-    @media (max-width: 600px) {
-      .hero h1 {
-        font-size: 2rem;
-      }
-
-      .hero p {
-        font-size: 1rem;
-      }
-    }
+    body { font-family: Arial, sans-serif; margin: 40px; background: #f8f8ff; }
+    #data { margin-top: 2em; }
+    table { border-collapse: collapse; }
+    th, td { border: 1px solid #999; padding: 8px 12px; }
+    th { background: #eee; }
+    button { padding: 10px 20px; background: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #009e72; }
   </style>
 </head>
 <body>
+  <h1>Welcome to Our Website!</h1>
+  <p>Click the button below to import and display data from Google Sheets.</p>
+  <button onclick="importData()">Import Data</button>
+  <div id="data"></div>
 
-<header>
-  <h1>Your Website Name</h1>
-</header>
+  <script>
+    async function importData() {
+      // Use your published Sheet ID and tab name here
+      const sheetId = '2PACX-1vQ0WGL4uWVJ6HgdwcUmQfUQGzNXVtVLtr2UyaUG9GDDA7ia7UEdG7Ydx8Qu--Vw8juUk7eiYIfAWeVt';
+      const sheetName = 'Sheet1'; // Change if your sheet/tab is named differently
 
-<section class="hero">
-  <h1>Welcome to Your Future!</h1>
-  <p>Build smart. Learn faster. Achieve more.</p>
-  <button onclick="alert('Get Started Clicked')">Get Started</button>
-</section>
+      const url = `https://opensheet.elk.sh/${sheetId}/${sheetName}`;
+      document.getElementById('data').innerHTML = "Loading...";
 
-<section class="features">
-  <div class="feature">
-    <h3>Fast & Reliable</h3>
-    <p>Our platform is built for speed and accuracy.</p>
-  </div>
-  <div class="feature">
-    <h3>Smart Integration</h3>
-    <p>Connect with tools like Google Sheets, APIs, and more.</p>
-  </div>
-  <div class="feature">
-    <h3>User Focused</h3>
-    <p>Designed with simplicity and clarity in mind.</p>
-  </div>
-</section>
+      try {
+        const response = await fetch(url);
+        const json = await response.json();
 
-<footer>
-  <p>&copy; 2025 Your Company. All rights reserved.</p>
-</footer>
+        if (!Array.isArray(json) || json.length === 0) {
+          document.getElementById('data').innerHTML = 'No data found!';
+          return;
+        }
+
+        // Create table
+        let html = '<table><tr>';
+        // Table headers
+        Object.keys(json[0]).forEach(key => {
+          html += `<th>${key}</th>`;
+        });
+        html += '</tr>';
+
+        // Table rows
+        json.forEach(row => {
+          html += '<tr>';
+          Object.values(row).forEach(value => {
+            html += `<td>${value}</td>`;
+          });
+          html += '</tr>';
+        });
+        html += '</table>';
+        document.getElementById('data').innerHTML = html;
+
+      } catch (err) {
+        document.getElementById('data').innerHTML = 'Failed to load data: ' + err.message;
+      }
+    }
+  </script>
 </body>
 </html>
