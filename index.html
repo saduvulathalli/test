@@ -2,62 +2,122 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Import Data from Google Sheets</title>
+  <title>HTML Content Importer</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 40px; background: #f8f8ff; }
-    #data { margin-top: 2em; }
-    table { border-collapse: collapse; }
-    th, td { border: 1px solid #999; padding: 8px 12px; }
-    th { background: #eee; }
-    button { padding: 10px 20px; background: #00b894; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #009e72; }
+    h1 { color: #333; }
+    button { padding: 10px 20px; background: #2980b9; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #2471a3; }
+    #container { margin-top: 2em; }
+    .cell-div {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding-left: 20px;   /* keeps content away from left edge */
+      flex-wrap: wrap;      /* allows content to wrap on small screens */
+    }
+    .cell-number {
+      color: #2980b9;
+      font-weight: bold;
+      min-width: 50px;     /* more space for numbering */
+      text-align: right;
+      margin-right: 10px;  /* space between number and content */
+    }
+    .img-wrapper {
+      /* width: 200px;
+      height: 200px; */
+      background: #fafafa;
+      /* border: 1px solid #e74c3c; */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 8px;
+      flex-shrink: 0;
+    }
+    .img-wrapper img {
+      width: 80%;
+      height: 80%;
+      object-fit: contain;
+      display: block;
+      background: #fafafa;
+    }
   </style>
+  
+  <!-- MathJax CDN -->
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-  <h1>Welcome to Our Website!</h1>
-  <p>Click the button below to import and display data from Google Sheets.</p>
-  <button onclick="importData()">Import Data</button>
-  <div id="data"></div>
+  <h1>HTML Content Importer</h1>
+  <p>Click the button to import HTML content from Google Sheets.<br>
+  Each cell’s content will appear as a rendered HTML block (MathJax supported!).</p>
+  <button onclick="importHtmlData()">Import HTML Data</button>
+  <div id="container"></div>
 
   <script>
-    async function importData() {
-      // Use your published Sheet ID and tab name here
-      const sheetId = '1cl6tdbtJtDjQGLjrJtuCZLRAvXq-QpQz1h3D3RP7FR4';
-      const sheetName = 'Sheet1'; // Change if your sheet/tab is named differently
+    async function importHtmlData() {
+      // Set your Google Sheet details here
+      const sheetId = '1cl6tdbtJtDjQGLjrJtuCZLRAvXq-QpQz1h3D3RP7FR4'; // <-- Replace with your sheet ID
+      const sheetName = 'Sheet1'; // <-- Replace with your sheet/tab name
 
       const url = `https://opensheet.elk.sh/${sheetId}/${sheetName}`;
-      document.getElementById('data').innerHTML = "Loading...";
+      const container = document.getElementById('container');
+      container.innerHTML = "Loading...";
 
       try {
         const response = await fetch(url);
         const json = await response.json();
 
-        if (!Array.isArray(json) || json.length === 0) {
-          document.getElementById('data').innerHTML = 'No data found!';
+        // Collect all cell values in order (row-wise, then col-wise if needed)
+        let cells = [];
+        json.forEach((row, rowIdx) => {
+          Object.values(row).forEach(cellVal => {
+            if (cellVal.trim() !== "") {
+              cells.push(cellVal);
+            }
+          });
+        });
+
+        if (cells.length === 0) {
+          container.innerHTML = "No data found!";
           return;
         }
 
-        // Create table
-        let html = '<table><tr>';
-        // Table headers
-        Object.keys(json[0]).forEach(key => {
-          html += `<th>${key}</th>`;
-        });
-        html += '</tr>';
+        // Display each cell's HTML as a div, with numbering
+        container.innerHTML = "";
+        cells.forEach((cellContent, idx) => {
+          const div = document.createElement('div');
+          div.className = 'cell-div';
 
-        // Table rows
-        json.forEach(row => {
-          html += '<tr>';
-          Object.values(row).forEach(value => {
-            html += `<td>${value}</td>`;
-          });
-          html += '</tr>';
+          // Show cell number
+          const numSpan = document.createElement('span');
+          numSpan.className = 'cell-number';
+          numSpan.textContent = (idx + 1) + '.';
+          div.appendChild(numSpan);
+
+          // ---- IMAGE WRAPPING FIX ----
+          // Replace all <img ...> in the content with <div class="img-wrapper"><img ...></div>
+          let fixedContent = cellContent.replace(
+            /<img(.*?)>/gi,
+            (match, group1) => `<div class="img-wrapper"><img${group1}></div>`
+          );
+
+          // Insert the cell HTML (math included!)
+          const cellBlock = document.createElement('div');
+          cellBlock.innerHTML = fixedContent;
+          div.appendChild(cellBlock);
+
+          container.appendChild(div);
         });
-        html += '</table>';
-        document.getElementById('data').innerHTML = html;
+
+        // Render math with MathJax
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          MathJax.typesetPromise();
+        }
 
       } catch (err) {
-        document.getElementById('data').innerHTML = 'Failed to load data: ' + err.message;
+        container.innerHTML = "Failed to load data: " + err.message;
       }
     }
   </script>
